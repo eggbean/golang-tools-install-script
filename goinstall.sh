@@ -2,10 +2,11 @@
 # shellcheck disable=SC2016
 set -e
 
+if [ "$(id -u)" -ne "0" ]; then { echo "This script must be run as root." >&2; exit 1; }; fi
+
 VERSION="1.18.1"
 
-[ -z "$GOROOT" ] && GOROOT="$HOME/.go"
-[ -z "$GOPATH" ] && GOPATH="$HOME/go"
+GOROOT="/usr/local/go"
 
 OS="$(uname -s)"
 ARCH="$(uname -m)"
@@ -71,33 +72,6 @@ fi
 
 if [ "$1" == "--remove" ]; then
     rm -rf "$GOROOT"
-    if [ "$OS" == "Darwin" ]; then
-        if [ "$shell" == "fish" ]; then
-            sed -i "" '/# GoLang/d' "$shell_profile"
-            sed -i "" '/set GOROOT/d' "$shell_profile"
-            sed -i "" '/set GOPATH/d' "$shell_profile"
-            sed -i "" '/set PATH $GOPATH\/bin $GOROOT\/bin $PATH/d' "$shell_profile"
-        else
-            sed -i "" '/# GoLang/d' "$shell_profile"
-            sed -i "" '/export GOROOT/d' "$shell_profile"
-            sed -i "" '/$GOROOT\/bin/d' "$shell_profile"
-            sed -i "" '/export GOPATH/d' "$shell_profile"
-            sed -i "" '/$GOPATH\/bin/d' "$shell_profile"
-        fi
-    else
-        if [ "$shell" == "fish" ]; then
-            sed -i '/# GoLang/d' "$shell_profile"
-            sed -i '/set GOROOT/d' "$shell_profile"
-            sed -i '/set GOPATH/d' "$shell_profile"
-            sed -i '/set PATH $GOPATH\/bin $GOROOT\/bin $PATH/d' "$shell_profile"
-        else
-            sed -i '/# GoLang/d' "$shell_profile"
-            sed -i '/export GOROOT/d' "$shell_profile"
-            sed -i '/$GOROOT\/bin/d' "$shell_profile"
-            sed -i '/export GOPATH/d' "$shell_profile"
-            sed -i '/$GOPATH\/bin/d' "$shell_profile"
-        fi
-    fi
     echo "Go removed."
     exit 0
 elif [ "$1" == "--help" ]; then
@@ -139,26 +113,6 @@ mkdir -p "$GOROOT"
 
 tar -C "$GOROOT" --strip-components=1 -xzf "$TEMP_DIRECTORY/go.tar.gz"
 
-echo "Configuring shell profile in: $shell_profile"
-touch "$shell_profile"
-if [ "$shell" == "fish" ]; then
-    {
-        echo '# GoLang'
-        echo "set GOROOT '${GOROOT}'"
-        echo "set GOPATH '$GOPATH'"
-        echo 'set PATH $GOPATH/bin $GOROOT/bin $PATH'
-    } >> "$shell_profile"
-else
-    {
-        echo '# GoLang'
-        echo "export GOROOT=${GOROOT}"
-        echo 'export PATH=$GOROOT/bin:$PATH'
-        echo "export GOPATH=$GOPATH"
-        echo 'export PATH=$GOPATH/bin:$PATH'
-    } >> "$shell_profile"
-fi
-
-mkdir -p "${GOPATH}/"{src,pkg,bin}
 echo -e "\nGo $VERSION was installed into $GOROOT.\nMake sure to relogin into your shell or run:"
 echo -e "\n\tsource $shell_profile\n\nto update your environment variables."
 echo "Tip: Opening a new terminal window usually just works. :)"
